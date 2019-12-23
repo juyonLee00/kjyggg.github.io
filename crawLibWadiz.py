@@ -21,6 +21,115 @@ class WadizCrawler:
 
         self.path = os.path.dirname(os.path.realpath(__file__))
 
+    def extractCol(self,tree, category, title, brand,achieve, funding, supporter, likes, goal, period, remaining):
+
+        try:
+            category = category[0]
+        except:
+            category = 'None'
+        try:
+            title = title[0]
+        except:
+            title = 'None'
+        try:
+            brand = brand[0]
+        except:
+            brand = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[3]/div/div[1]/dl/dd/p/a/text()')
+            try:
+                brand = brand[0]
+            except:
+                brand = 'None'
+        try:
+            achieve = achieve[0]
+        except:
+            achieve = 'None'
+        try:
+            supporter = supporter[0]
+        except:
+            supporter = 'None'
+        try:
+            likes = likes[0]
+        except:
+            likes = 'None'
+        try:
+            funding = funding[0]
+        except:
+            likes = 'None'
+        try:
+            goal = goal[0].strip()
+        except:
+            goal = 'None'
+        try:
+            period = period[0].strip()
+        except:
+            period = 'None'
+        try:
+            remaining = remaining[0]
+        except:
+            remaining = 'None'
+        try:
+            stdate = period.split('-')[0].replace('.', '-')
+        except:
+            stdate = 'None'
+        try:
+            endate = period.split('-')[1].replace('.', '-')
+        except:
+            endate = 'None'
+        return category, title, brand,achieve, funding, supporter, likes, goal, period, remaining, stdate, endate
+    def cleansing(self, text):
+        try:
+            text = re.sub('[ㅣ,#/:$@*\"※&%ㆍ』\\‘|\(\)\[\]\<\>`\'…》]', '', text)
+
+            text = re.sub(r'\\', '', text)
+            text = re.sub(r'\\\\', '', text)
+            text = re.sub('\'', '', text)
+            text = re.sub('\"', '', text)
+
+            text = re.sub('\u200b', ' ', text)
+            text = re.sub('&nbsp;|\t', ' ', text)
+            text = re.sub('\r\n', '\n', text)
+
+            while (True):
+                text = re.sub('  ', ' ', text)
+                if text.count('  ') == 0:
+                    break
+
+            while (True):
+                text = re.sub('\n \n ', '\n', text)
+                # print(text.count('\n \n '))
+                if text.count('\n \n ') == 0:
+                    break
+
+            while (True):
+                text = re.sub(' \n', '\n', text)
+                if text.count(' \n') == 0:
+                    break
+
+            while (True):
+                text = re.sub('\n ', '\n', text)
+                if text.count('\n ') == 0:
+                    break
+
+            while (True):
+                text = re.sub('\n\n', '\n', text)
+                # print(text.count('\n\n'))
+                if text.count('\n\n') == 0:
+                    break
+            text = re.sub(u'[\u2500-\u2BEF]', '', text)  # I changed this to exclude chinese char
+
+            # dingbats
+            text = re.sub('\\-|\]|\{|\}|\(|\)', "", text)
+
+            text = re.sub(u'[\u2702-\u27b0]', '', text)
+            text = re.sub(u'[\uD800-\uDFFF]', '', text)
+            text = re.sub(u'[\U0001F600-\U0001F64F]', '', text)  # emoticons
+            text = re.sub(u'[\U0001F300-\U0001F5FF]', '', text)  # symbols & pictographs
+            text = re.sub(u'[\U0001F680-\U0001F6FF]', '', text)  # transport & map symbols
+            text = re.sub(u'[\U0001F1E0-\U0001F1FF]', '', text)  # flags (iOS)
+        except Exception as e:
+            print('cleaser error')
+            text = 'None'
+        return text
 
     def getUrlLister(self, pagename, page_url, nUrl):
         option = Options()
@@ -39,7 +148,7 @@ class WadizCrawler:
         conn = self.conn
         curs = conn.cursor()
 
-        n_scrollDown = nUrl//48
+        n_scrollDown = nUrl//48 + 2
         k=0
         while k<n_scrollDown+1:
             k+=1
@@ -70,7 +179,7 @@ class WadizCrawler:
         conn = self.conn
         curs = conn.cursor()
         #크롤링 안된 url 가져오기
-        sql = "select * from wadiz_urllist where crawled=\'%s\'"%('F')
+        sql = "select * from wadiz_urllist where crawled='F' or crawled='DB insert error'"
         curs.execute(sql)
         rows = curs.fetchall()
         #크롤링이 안된 모든 행들에 대해서 실시
@@ -84,67 +193,98 @@ class WadizCrawler:
             response = urlopen(url)
             htmlparser = etree.HTMLParser()
             tree = etree.parse(response, htmlparser)
-            try:
-                category = tree.xpath('//*[@id="container"]/div[2]/p/em/text()')
-                title = tree.xpath('//*[@id="container"]/div[2]/h2/a/text()')
-                brand = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[4]/div/div[1]/dl/dd/p/a/text()')
-                achieve = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[3]/strong/text()')
-                funding = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[4]/strong/text()')
-                supporter = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[5]/strong/text()')
-                likes = tree.xpath('//*[@id="cntLike"]/text()')
-                goal = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[3]/div/p[1]/text()[1]')
-                goal = goal[0].split('원')[0].replace(' ','')
-                period = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[3]/div/p[1]/text()[2]')
-                period = period[0].replace(' ','')
-                remaining = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[1]/text()')
-                remaining = remaining[0]
-                stdate = period.split('-')[0].replace('.','-')
-                endate = period.split('-')[1].replace('.','-')
-                now = datetime.now()
-                dtStr = now.strftime("%Y-%m-%d %H:%M:%S")
-                category = category[0]
-                title = title[0]
-                brand = brand[0].replace("'",'')
-                brand = brand.replace('"','')
-                achieve = int(achieve[0])
-                funding = int(funding[0].replace(',',''))
-                supporter = int(supporter[0])
-                likes = int(likes[0])
-                goal= goal.replace(',','')
 
-                title = re.sub(u"(http[^ ]*)", " ", title)
-                title = re.sub(u"@(.)*\s", " ", title)
-                title = re.sub(u"#", "", title)
-                title = re.sub(u"\\d+", " ", title)
-                title = re.sub(u"[^가-힣A-Za-z]", " ", title)
-                title = re.sub(u"\\s+", " ", title)
+            category = tree.xpath('//*[@id="container"]/div[2]/p/em/text()')
+            title = tree.xpath('//*[@id="container"]/div[2]/h2/a/text()')
+            brand = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[4]/div/div[1]/dl/dd/p/a/text()')
+            achieve = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[3]/strong/text()')
+            funding = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[4]/strong/text()')
+            supporter = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[5]/strong/text()')
+            likes = tree.xpath('//*[@id="cntLike"]/text()')
+            goal = tree.xpath(
+                '//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[3]/div/p[1]/text()[1]')
+
+            period = tree.xpath(
+                '//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[3]/div/p[1]/text()[2]')
+            remaining = tree.xpath('//*[@id="container"]/div[4]/div/div[1]/div[1]/div[1]/div[1]/p[1]/text()')
+            try:
+                if remaining[0] == '% 달성':
+                    funding = tree.xpath(
+                        '//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[1]/div[1]/p[2]/strong/text()')
+                    supporter = tree.xpath(
+                        '//*[@id="container"]/div[4]/div/div[1]/div[2]/div/div/section/div[4]/div/div[1]/div[1]/p[3]/strong/text()')
+                    likes = tree.xpath('//*[@id="cntLike"]/text()')
             except:
-                sql3 = "update wadiz_urllist set crawled='DB insert Error' where url=\'%s\'" % (url)
-                curs.execute(sql3)
-                conn.commit()
-                print('first', id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, dtStr, url)
+                print('url:',url)
+            now = datetime.now()
+            dtStr = now.strftime("%Y-%m-%d %H:%M:%S")
+
+            category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate = self.extractCol(tree, category, title, brand,achieve, funding, supporter, likes, goal, period, remaining)
+
+            category = self.cleansing(category)
+            title = self.cleansing(title)
+            brand = self.cleansing(brand)
+            achieve = self.cleansing(achieve)
+            funding = self.cleansing(funding)
+            supporter = self.cleansing(supporter)
+            likes = self.cleansing(likes)
+            goal = self.cleansing(goal)
+            period = self.cleansing(period)
+            remaining = self.cleansing(remaining)
+            nowday = now.strftime("%Y-%m-%d")
+
+                # sql3 = "update wadiz_urllist set crawled='DB insert Error' where url=\'%s\'" % (url)
+                # curs.execute(sql3)
+                # conn.commit()
+                # print('first', id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, dtStr, url)
             # url 을 통해 가져온 내용들을 crawl 테이블에 저장한다.
             # id 를 통해
-            sql0 = 'select count(*) from wadiz_crawl where id = %d'% (id)
+            sql0 = "select count(*) from wadiz_crawl where id = %d and remaining=\'%s\'"% (id, remaining)
             curs.execute(sql0)
             row = curs.fetchall()
             if row[0][0]==0:
                 try:
-                    sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
-                                            value(%d,\'%s\', \'%s\', \'%s\', \'%s\', %d, %d, %d, %d, \'%s\', \'%s\',\'%s\',\'%s\',\'%s\',\'%s\' )'\
-                                                %(id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, dtStr)
-                    curs.execute(sql1)
-                    conn.commit()
-                    print('Crawling '+url+' finish',sql1)
+                    if endate>=nowday:
+                        sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
+                                                value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'\
+                                                    %(id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, dtStr)
+                        curs.execute(sql1)
+                        conn.commit()
+                        print('Crawling '+url+' finish',sql1)
 
-                    sql = "update wadiz_urllist set crawled='T' where url=\'%s\'"%(url)
-                    curs.execute(sql)
-                    conn.commit()
+                        conn.commit()
+                    elif remaining=='펀딩성공':
+                        sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
+                                                                        value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')' \
+                               % (
+                               id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period,
+                               remaining, stdate, endate, dtStr)
+                        curs.execute(sql1)
+                        conn.commit()
+                        print('Crawling ' + url + ' finish', sql1)
+
+                        sql = "update wadiz_urllist set crawled='T' where url=\'%s\'" % (url)
+                        curs.execute(sql)
+                        conn.commit()
+                    else:
+                        remaining='펀딩실패'
+                        sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
+                                                                        value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')' \
+                               % (
+                               id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period,
+                               remaining, stdate, endate, dtStr)
+                        curs.execute(sql1)
+                        conn.commit()
+                        print('Crawling ' + url + ' finish', sql1)
+
+                        sql = "update wadiz_urllist set crawled='T' where url=\'%s\'" % (url)
+                        curs.execute(sql)
+                        conn.commit()
                 except:
                     sql0 = "update wadiz_urllist set crawled='DB insert Error' where url=\'%s\'"%(url)
                     curs.execute(sql0)
                     conn.commit()
                     print('second',sql0, url)
-
+        else:
+            print(url+"already exist")
         conn.close()
-
