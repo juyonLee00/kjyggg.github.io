@@ -157,7 +157,7 @@ class WadizCrawler:
             print(str(k)+"번 반복했습니다.")
 
         for i in range(1, nUrl+1):
-            xpath ='/html/body/div[1]/main/div[2]/div/div[3]/div[2]/div[1]/div[%s]/div/a'%(i)
+            xpath ='/html/body/div[1]/main/div[2]/div/div[3]/div[2]/div[1]/div[%d]/div/div/a'%(i)
             url = driver.find_element_by_xpath(xpath)
             url = url.get_attribute('href')
             sql0 = "select * from wadiz_urllist where url=\'%s\'" % (url)
@@ -174,7 +174,6 @@ class WadizCrawler:
             #print(url)
         #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         conn.close()
-
     def getCrawler(self):
         conn = self.conn
         curs = conn.cursor()
@@ -189,6 +188,8 @@ class WadizCrawler:
             id = row[0]
             pagename = row[1]
             url = row[2]
+            if url == 'None':
+                continue
             # 해당 url 을 이용해서 requests 하고 요소들을 가져온다.
             response = urlopen(url)
             htmlparser = etree.HTMLParser()
@@ -244,7 +245,7 @@ class WadizCrawler:
             row = curs.fetchall()
             if row[0][0]==0:
                 try:
-                    if endate>=nowday:
+                    if endate>nowday:
                         sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
                                                 value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'\
                                                     %(id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, dtStr)
@@ -253,6 +254,10 @@ class WadizCrawler:
                         print('Crawling '+url+' finish',sql1)
 
                         conn.commit()
+                        sql_url = "update wadiz_urllist set status='펀딩중', crawled='F' where id=\'%s\'"% (url)
+                        curs.execute(sql_url)
+                        conn.commit()
+
                     elif remaining=='펀딩성공':
                         sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
                                                                         value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')' \
@@ -261,13 +266,13 @@ class WadizCrawler:
                                remaining, stdate, endate, dtStr)
                         curs.execute(sql1)
                         conn.commit()
+
                         print('Crawling ' + url + ' finish', sql1)
 
-                        sql = "update wadiz_urllist set crawled='T' where url=\'%s\'" % (url)
-                        curs.execute(sql)
+                        sql_url = "update wadiz_urllist set status='펀딩완료',crawled='T' where url=\'%s\'" % (url)
+                        curs.execute(sql_url)
                         conn.commit()
                     else:
-                        remaining='펀딩실패'
                         sql1 = 'insert into wadiz_crawl (id, pagename, category, title, brand, achieve, funding, supporter, likes, goal, period, remaining, stdate, endate, accesstime)\
                                                                         value(%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')' \
                                % (
@@ -277,8 +282,8 @@ class WadizCrawler:
                         conn.commit()
                         print('Crawling ' + url + ' finish', sql1)
 
-                        sql = "update wadiz_urllist set crawled='T' where url=\'%s\'" % (url)
-                        curs.execute(sql)
+                        sql_url = "update wadiz_urllist set status='펀딩완료',crawled='T' where url=\'%s\'" % (url)
+                        curs.execute(sql_url)
                         conn.commit()
                 except:
                     sql0 = "update wadiz_urllist set crawled='DB insert Error' where url=\'%s\'"%(url)
