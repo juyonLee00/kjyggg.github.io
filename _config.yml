@@ -107,13 +107,13 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Name"
+  name             : "kim jae young"
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio              : "I am an **amazing** person."
-  location         : "Somewhere"
-  email            :
+  bio              : "data scientist"
+  location         : "5F,23,Gangnam-daero 62-gil, Gangnam-gu,Seoul Korea"
+  email            : "jykim@almaden.co.kr"
   links:
-    - label: "Email"
+    - label: "jykim@almaden.co.kr"
       icon: "fas fa-fw fa-envelope-square"
       # url: mailto:your.name@email.com
     - label: "Website"
