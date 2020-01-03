@@ -1,5 +1,5 @@
 ---
-title: "Welcome to Jekyll!"
+title: "와디즈 홈페이지 스크래핑을 통해 알아본 창업 트렌드"
 date: 2017-10-20 08:26:28 -0400
 categories: jekyll update
 ---
